@@ -40,6 +40,30 @@ helm install nats nats/nats \
   --values values.yaml
 ```
 
+## Install NATS using Helm with Command Line Overrides
+
+Alternatively, you can install NATS with cluster mode and JetStream enabled using `--set` flags directly, without using a values file:
+
+```bash
+helm install nats nats/nats \
+  --namespace nats-system \
+  --create-namespace \
+  --set config.cluster.enabled=true \
+  --set config.cluster.replicas=3 \
+  --set config.cluster.routeURLs.useFQDN=true \
+  --set config.jetstream.enabled=true \
+  --set config.jetstream.fileStore.enabled=true \
+  --set config.jetstream.fileStore.pvc.enabled=true \
+  --set config.jetstream.fileStore.pvc.size=10Gi \
+  --set config.jetstream.fileStore.pvc.storageClassName=standard \
+  --set config.jetstream.memoryStore.enabled=true \
+  --set config.jetstream.memoryStore.size=1Gi \
+  --set natsBox.enabled=true \
+  --set reloader.enabled=true
+```
+
+This command provides the same configuration as the values.yaml file but can be used directly from the command line.
+
 ## Verify the Installation
 
 Check if the NATS pods are running:
@@ -81,6 +105,15 @@ helm upgrade nats nats/nats \
   --values values.yaml
 ```
 
+Or using command line overrides:
+
+```bash
+helm upgrade nats nats/nats \
+  --namespace nats-system \
+  --set config.cluster.replicas=5 \
+  --set config.jetstream.fileStore.pvc.size=20Gi
+```
+
 ## Uninstalling NATS
 
 ```bash
@@ -89,5 +122,5 @@ helm uninstall nats -n nats-system
 
 ## Customizing the Configuration
 
-The `values.yaml` file provided can be modified to suit your specific requirements. 
+The `values.yaml` file provided can be modified to suit your specific requirements.
 See the comments in the file for detailed information about each configuration option.
