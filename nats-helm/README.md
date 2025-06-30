@@ -183,6 +183,53 @@ helm upgrade nats nats/nats \
   --set config.jetstream.fileStore.pvc.size=20Gi
 ```
 
+## Using a Private Registry
+
+If you need to pull the NATS images from a private registry (e.g., GitLab Container Registry), follow these steps:
+
+### 1. Create a Kubernetes Secret for Registry Authentication
+
+```bash
+kubectl create secret docker-registry gitlab-registry \
+  --namespace nats-system \
+  --docker-server=registry.gitlab.com \
+  --docker-username=<your-gitlab-username> \
+  --docker-password=<your-gitlab-access-token> \
+  --docker-email=<your-email>
+```
+
+### 2. Configure Helm to Use the Private Registry
+
+When installing NATS, add the following parameters to specify the registry and pull secrets:
+
+```bash
+helm install nats nats/nats \
+  --namespace nats-system \
+  --create-namespace \
+  --set global.image.registry=registry.gitlab.com/your-group/your-project \
+  --set global.image.pullSecretNames[0]=gitlab-registry \
+  --set config.cluster.enabled=true \
+  --set config.cluster.replicas=3 \
+  --set config.jetstream.enabled=true
+```
+
+### 3. Custom Image Names
+
+If your images have custom names or paths in the registry, you can specify them individually:
+
+```bash
+helm install nats nats/nats \
+  --namespace nats-system \
+  --create-namespace \
+  --set global.image.registry=registry.gitlab.com/your-group \
+  --set global.image.pullSecretNames[0]=gitlab-registry \
+  --set container.image.repository=your-project/nats \
+  --set reloader.image.repository=your-project/nats-server-config-reloader \
+  --set natsBox.container.image.repository=your-project/nats-box \
+  --set config.cluster.enabled=true \
+  --set config.jetstream.enabled=true
+```
+
 ## Uninstalling NATS
 
 ```bash
