@@ -21,6 +21,44 @@ helm repo update
 kubectl create namespace nats-system
 ```
 
+## Securing NATS with Token Authentication
+
+You can secure your NATS installation using token authentication. First, create a Kubernetes secret containing your authentication token:
+
+```bash
+# Create a random token
+TOKEN=$(openssl rand -hex 16)
+echo "Generated token: $TOKEN"
+
+# Create a Kubernetes secret with the token
+kubectl create secret generic nats-auth \
+  --namespace nats-system \
+  --from-literal=token=$TOKEN
+```
+
+Then, when installing NATS with Helm, include the token authentication configuration:
+
+```bash
+helm install nats nats/nats \
+  --namespace nats-system \
+  --create-namespace \
+  --set config.cluster.enabled=true \
+  --set config.cluster.replicas=3 \
+  --set config.jetstream.enabled=true \
+  --set "config.merge.authorization.token={\"valueFrom\":{\"secretKeyRef\":{\"name\":\"nats-auth\",\"key\":\"token\"}}}" \
+  --set "config.cluster.merge.authorization.token={\"valueFrom\":{\"secretKeyRef\":{\"name\":\"nats-auth\",\"key\":\"token\"}}}"
+```
+
+This configuration:
+- Creates a secure token stored in a Kubernetes secret
+- Configures NATS to use this token for client-to-server authentication
+- Also uses the same token for cluster node authentication
+
+When connecting clients to NATS, they will need to include this token:
+```
+nats://token@nats:4222
+```
+
 ## Install NATS using Helm with Custom Values
 
 The provided `values.yaml` file in this directory configures NATS with:
@@ -79,8 +117,9 @@ kubectl get pods -n nats-system
 Applications can access NATS using the service:
 
 ```
-nats://nats:4222  # For NATS core protocol
-nats://nats:4222/js  # For JetStream
+nats://nats:4222  # For NATS core protocol (without authentication)
+nats://<token>@nats:4222  # For NATS core protocol (with token authentication)
+nats://<token>@nats:4222/js  # For JetStream (with token authentication)
 ```
 
 ### Using the NATS Box for testing
@@ -94,6 +133,36 @@ kubectl exec -it -n nats-system deployment/nats-box -- /bin/sh -l
 nats server check jetstream  # Check JetStream status
 nats account info            # View account information
 ```
+
+## Advanced Authentication Options
+
+Besides simple token authentication, NATS supports various authentication mechanisms:
+
+1. **Username/Password Authentication**
+   ```bash
+   kubectl create secret generic nats-users \
+     --namespace nats-system \
+     --from-literal=users.json='{"users":[{"username":"admin","password":"s3cr3t!"},{"username":"user","password":"pwd123"}]}'
+     
+   helm install nats nats/nats \
+     --namespace nats-system \
+     --create-namespace \
+     --set "config.merge.authorization.users={\"valueFrom\":{\"secretKeyRef\":{\"name\":\"nats-users\",\"key\":\"users.json\"}}}"
+   ```
+
+2. **TLS Authentication**
+   ```bash
+   # Create TLS certificates (example using cert-manager or manually)
+   # ...
+   
+   helm install nats nats/nats \
+     --namespace nats-system \
+     --set config.tls.enabled=true \
+     --set config.tls.secretName=nats-tls-certs
+   ```
+
+3. **JWT-Based Authentication**
+   NATS also supports JWT and NKeys for more advanced authentication scenarios.
 
 ## Updating NATS configuration
 
