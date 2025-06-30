@@ -1,0 +1,9 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: nats-system-strict
+  namespace: nats-system
+spec:
+  mtls:
+    mode: STRICT
+
