@@ -45,6 +45,7 @@ helm install nats nats/nats \
   --set config.cluster.enabled=true \
   --set config.cluster.replicas=3 \
   --set config.jetstream.enabled=true \
+  --set service.ports.monitor.enabled=true \
   --set "config.merge.authorization.token=9279e3c9ada3e4372f43a027b15d05b2" \
   --set "natsBox.contexts.default.merge.token=9279e3c9ada3e4372f43a027b15d05b2"
 ```
